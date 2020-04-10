@@ -171,8 +171,8 @@ def new_line():
     """the function creates new line every time after reading the number you entered"""
     global l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, num
     if count_line < 4:
-        #num = random_number()  # random number which you have to guess
-        Label(text=num).pack()
+        num = random_number()  # random number which you have to guess
+        #Label(text=num).pack()
         l1 = Line(root); l1.create_line(); l1.entry.focus_set()
         l2 = Line(root); l2.create_line()
         l3 = Line(root); l3.create_line()

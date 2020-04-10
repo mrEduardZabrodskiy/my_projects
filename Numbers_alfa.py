@@ -2,8 +2,8 @@ from tkinter import *
 from random import randint
 import datetime
 import time
-from pyautogui import press
-import keyword
+import pyautogui
+#import json
 
 root = Tk()
 root.title("Numbers")
@@ -63,47 +63,59 @@ class Line:
                             start_time = datetime.datetime.now()
                             count_step += 1
                             self.label['text'] = f" {in_num}:{loc_num} "
-                            self.won_label()
+                            self.wonLabel()
                             break
                         else:
                             count_step += 1
                             self.label['text'] = f" {in_num}:{loc_num} "
-                            self.won_label()
+                            self.wonLabel()
                             break
                     else:
                         if count_step == 0:
                             start_time = datetime.datetime.now()
                             count_step += 1
                             self.label['text'] = f" {in_num}:{loc_num} "
-                            #self.entry.focus_lastfor()
-                            #self.entry.insert(END, keyword)
+                            focus()
                             break
                         else:
                             count_step += 1
                             self.label['text'] = f" {in_num}:{loc_num} "
                             if count_step == count_line:
                                 new_line()
-                            #self.entry.insert(TOP, press('tab'))
+                            focus()
                             break
-                #self.e.insert(0, press("tab"))
+                focus()
 
-    def won_label(self):
-        global count_step, count_finish_label, status_game
+    def wonLabel(self):
+        global count_step, count_finish_label, status_game, button_frame, restart_button, save_button, won_label, game_time
         if count_finish_label == 0:
-            frame = self.frame
             finish_time = datetime.datetime.now()
             game_time = finish_time - start_time
-            label = Label(text=f" You WIN\n {count_step} steps   {game_time}")
-            frame.pack()
-            label.pack()
+            if language_button['text'] == 'en':
+                if count_step == 1:
+                    won_label = Label(text=f" Вы выиграли \n {count_step} шаг   {game_time}")
+                elif count_step in (2, 3, 4):
+                    won_label = Label(text=f" Вы выиграли \n {count_step} шагa   {game_time}")
+                else:
+                    won_label = Label(text=f" Вы выиграли\n {count_step} шагов   {game_time}")
+            else:
+                if count_step == 1:
+                    won_label = Label(text=f" You WIN\n {count_step} step   {game_time}")
+                else:
+                    won_label = Label(text=f" You WIN\n {count_step} steps   {game_time}")
+            won_label.pack()
             button_frame = Frame(root)
-            save_button = Button(button_frame, text="Save", width=9)
-            exit_button = Button(button_frame, text="Exit", width=9)
+            if language_button['text'] == 'en':
+                save_button = Button(button_frame, text="Сохранить", width=9)
+                restart_button = Button(button_frame, text="Заново", width=9)
+            else:
+                save_button = Button(button_frame, text="Save", width=9)
+                restart_button = Button(button_frame, text="Restart", width=9)
             button_frame.pack(ipady=10)
             save_button.pack(side=LEFT, padx=10)
-            save_button.bind("<Button-1>", restart) # restart here only for test
-            exit_button.pack(side=RIGHT, padx=10)
-            exit_button.bind("<Button-1>", quit)
+            save_button.bind("<Button-1>", save_result)
+            restart_button.pack(side=RIGHT, padx=10)
+            restart_button.bind("<Button-1>", restart)
             count_finish_label += 1
             status_game = False
 
@@ -111,6 +123,10 @@ class Line:
         self.frame.destroy()
         self.label.destroy()
         self.entry.destroy()
+        button_frame.destroy()
+        save_button.destroy()
+        restart_button.destroy()
+        won_label.destroy()
 
 
 # functions
@@ -131,23 +147,33 @@ def random_number():
 
 def info_button_canvas(event):
     """the function shows game information and instructions"""
-    if info_button['text'] == 'Close info':
+    global text
+    if info_button['text'] == 'Close info' or info_button['text'] == 'Закрыть':
+        text.destroy()
         info_canvas.config(width=0)
-        info_button["text"] = 'Open info'
-        text['text'] = ''
-        text.config(width=0)
-    else:
+        if info_button['text'] == 'Close info':
+            info_button["text"] = 'Open info'
+        else:
+            info_button["text"] = 'Открыть'
+    elif info_button['text'] == 'Open info' or info_button['text'] == 'Открыть':
+        text = Text(info_canvas, width=40, height=10, wrap=WORD, bg='#F0F0F0', bd=0)
+        text.delete(1.0, END)
+        text.insert(1.0, game_info)
+        text.pack(side=TOP, padx=30)
         info_canvas.config(width=300)
-        info_button["text"] = 'Close info'
-        text['text'] = 'info'
-        text.config(width=20)
+        if info_button['text'] == 'Open info':
+            info_button["text"] = 'Close info'
+        else:
+            info_button["text"] = 'Закрыть'
 
 
 def new_line():
     """the function creates new line every time after reading the number you entered"""
-    global l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15
+    global l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, num
     if count_line < 4:
-        l1 = Line(root); l1.create_line()
+        #num = random_number()  # random number which you have to guess
+        Label(text=num).pack()
+        l1 = Line(root); l1.create_line(); l1.entry.focus_set()
         l2 = Line(root); l2.create_line()
         l3 = Line(root); l3.create_line()
         l4 = Line(root); l4.create_line()
@@ -163,38 +189,133 @@ def new_line():
     elif count_line == 13: l14 = Line(root); l14.create_line()
     elif count_line == 14: l15 = Line(root); l15.create_line()
 
-def change_language():
-    pass
+
+def change_language(event):
+    global game_info, save_button, won_label, count_step, game_time, won_label
+    if language_button['text'] == 'english':
+        language_button['text'] = 'русский'
+        game_info = game_info_en
+        if info_button['text'] == 'Close info' or info_button['text'] == 'Закрыть':
+            text.delete(1.0, END)
+            text.insert(1.0, game_info_en)
+        if info_button['text'] == 'Закрыть':
+            info_button['text'] = 'Close info'
+        elif info_button['text'] == 'Открыть':
+            info_button['text'] = 'Open info'
+        try:
+            save_button['text'] = 'Save'
+            restart_button['text'] = 'Restart'
+            if count_step == 1:
+                won_label['text'] = "You WIN\n {0} step {1}".format(count_step, game_time)
+            else:
+                won_label['text'] = "You WIN\n" + str(count_step) + " steps " + str(game_time)
+        except (IndentationError, NameError): pass
+
+    else:
+        language_button['text'] = 'english'
+        game_info = game_info_ru
+        if info_button['text'] == 'Close info' or info_button['text'] == 'Закрыть':
+            text.delete(1.0, END)
+            text.insert(1.0, game_info_ru)
+        if info_button['text'] == 'Open info':
+            info_button['text'] = 'Открыть'
+        elif info_button['text'] == 'Close info':
+            info_button['text'] = 'Закрыть'
+        try:
+            save_button['text'] = 'Сохранить'
+            restart_button['text'] = 'Заново'
+            if count_step == 1:
+                won_label['text'] = "Вы выиграли\n" + str(count_step) + " шаг " + str(game_time)
+            elif count_step in (2, 3, 4):
+                won_label['text'] = "Вы выиграли\n" + str(count_step) + " шагa " + str(game_time)
+            else:
+                won_label['text'] = "Вы выиграли\n" + str(count_step) + " шагов " + str(game_time)
+        except (IndentationError, NameError): pass
+
+
 def restart(event):
-    pass
+    global count_step, count_line, status_game, count_finish_label, count_save_canvas
+    eval_list = ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8', 'l9', 'l10', 'l11', 'l12', 'l13', 'l14', 'l15']
+    if count_line < 5:
+        for i in (l1, l2, l3, l4): i.del_line()
+        count_line, count_step, count_finish_label, status_game = 0, 0, 0, TRUE
+        new_line()
+        count_save_canvas = 0
+    else:
+        for i in eval_list[:count_line]: eval(i).del_line()
+        count_line, count_step, count_finish_label, status_game = 0, 0, 0, TRUE
+        new_line()
+        count_save_canvas = 0
+
+
+def focus():
+    lines_list = ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8', 'l9', 'l10', 'l11', 'l12', 'l13', 'l14', 'l15']
+    eval(lines_list[count_step]).entry.focus_set()
+
+
+def save_result(event):
+    global name_entry, save_root, count_save_canvas
+    if count_save_canvas == 0:
+        save_root = Tk()
+        save_canvas = Canvas(save_root, height=200, width=500)
+        save_canvas.pack()
+        save_frame = Frame(save_canvas, padx=15, pady=15)
+        if language_button['text'] == 'english':
+            save_label = Label(save_frame, text='Введите ваше имя')
+        else:
+            save_label = Label(save_frame,  text='Enter your name')
+        save_button = Button(save_frame, text='OK', width=8)
+        name_entry = Entry(save_frame, width=20)
+        save_label.pack(side=LEFT)
+        name_entry.pack(side=LEFT, padx=10)
+        save_button.pack(side=LEFT)
+        save_frame.pack()
+        name_entry.bind('<Return>', get_name)
+        save_button.bind("<Button-1>", get_name)
+        save_label.focus_set()
+        count_save_canvas += 1
+
+
+def get_name(event):
+    name = name_entry.get()
+    save_root.destroy()
+    records_list[name] = [count_step, game_time]
 
 
 # const
 
-num = random_number()# random number which you have to gues
+records_list = {}
 status_game = True # while the number still not found self.read_line continue read next line
-count_line, count_step, count_finish_label = 0, 0, 0
-
+count_line, count_step, count_finish_label, count_save_canvas = 0, 0, 0, 0
+game_info_ru = 'Числа\n' \
+                    'В этой игре вам необходимо вычислить четырехзначное число. ' \
+                    'Цифры в числе не повторяются. Результаты справа: первое число это количество правильных цифр;' \
+                    ' второе число это количество правильных цифр на правильном месте.'
+game_info_en = 'Numbers\n' \
+                    'In this game you need to calculate a four-digit number.' \
+                    ' The digits in the number are not repeated. ' \
+                    'Results on the right: the first number is the number of valid digits;' \
+                    'the second number is the number of correct digits in the right place.'
 # info canvas
 
-info_canvas = Canvas(root, width=300, height=0)
+info_canvas = Canvas(root, height=50)
 info_canvas.pack(side=RIGHT)
-game_info = 'info'
-text = Label(info_canvas, text=game_info, width=20)
-text.pack()
+
+game_info = game_info_en
+text = Text(info_canvas, width=40, height=11, wrap=WORD, bg='#F0F0F0', bd=0, state=NORMAL)
+text.insert(1.0, game_info)
+text.pack(side=TOP, padx=30)
 
 error_line = Label(text="")
 error_line.pack()
-l1 = Label(text=num)
-#l1.pack() # random number is displayed in the top
 
 # buttons
 
 setting_frame = Frame(root)
 setting_frame.pack()
-language_button = Button(setting_frame, text='en', width=8)
+language_button = Button(setting_frame, text='русский', width=8)
 language_button.pack(side=LEFT, padx=10, pady=5)
-language_button.bind('<Button-1>', change_language())
+language_button.bind('<Button-1>', change_language)
 
 info_button = Button(setting_frame, text='Close info', width=8)
 info_button.pack(side=RIGHT, padx=10, pady=5)
@@ -203,3 +324,6 @@ info_button.bind("<Button-1>", info_button_canvas)
 new_line()
 root.mainloop()
 
+if __name__ == '__main__':
+    for i in records_list:
+        print(i, records_list[i][0], records_list[i][1])
